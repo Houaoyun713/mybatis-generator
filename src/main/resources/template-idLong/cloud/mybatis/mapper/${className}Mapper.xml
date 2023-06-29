@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<#assign updateIgnoreList = ["create_time", "update_time", "screate_time", "supdate_time"] />
+<#assign className = table.className />
+<#assign pkSqlName = table.pkColumn.sqlName />
+<#assign pkColumnName = table.pkColumn.columnNameLower />
+<#assign leftside = "${r'#{'}" />
+<#assign rightside = "}" />
+<mapper namespace="${basepackage}.entity.po.${className}Po">
+	<resultMap id="BaseResultMap" type="${basepackage}.entity.po.${className}Po">
+		<#list table.columns as column>
+		<#if column.pk>
+		<id column="${column.sqlName}" property="${column.columnNameLower}" />
+		<#else>
+		<result column="${column.sqlName}" property="${column.columnNameLower}" />
+		</#if>
+		</#list>
+	</resultMap>
+	<resultMap id="BaseResultMapListVo" type="${basepackage}.entity.vo.${className?uncap_first}.${className}ListVo">
+		<#list table.columns as column>
+		<#if column.pk>
+		<id column="${column.sqlName}" property="${column.columnNameLower}" />
+		<#else>
+		<result column="${column.sqlName}" property="${column.columnNameLower}" />
+		</#if>
+		</#list>
+	</resultMap>
+	<resultMap id="BaseResultMapVo" type="${basepackage}.entity.vo.${className?uncap_first}.${className}Vo">
+		<#list table.columns as column>
+		<#if column.pk>
+		<id column="${column.sqlName}" property="${column.columnNameLower}" />
+		<#else>
+		<result column="${column.sqlName}" property="${column.columnNameLower}" />
+		</#if>
+		</#list>
+	</resultMap>
+
+
+	<sql id="Table_Name">
+		${table.sqlName}
+	</sql>
+
+	<sql id="Base_Column">
+		<#list table.columns as column>
+		<#if column_has_next>
+		${column.sqlName},
+		<#else>
+		${column.sqlName}
+		</#if>
+		</#list>
+	</sql>
+
+	<sql id="Base_Where">
+	    <trim prefixOverrides="AND">
+	      <#list table.columns as column>
+		  <if test="${column.columnNameLower} != null">
+            AND ${column.sqlName} = ${leftside}${column.columnNameLower}${rightside}
+		  </if>
+		  </#list>
+	    </trim>
+	</sql>
+	
+    <sql id="Base_Select">
+	    select
+		  <include refid="Base_Column" />
+		from
+		  <include refid="Table_Name" />
+		<where>
+		  <include refid="Base_Where" />
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="${basepackage}.entity.po.${className}Po" useGeneratedKeys="true" keyProperty="${pkColumnName}">
+	    insert into <include refid="Table_Name" />
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+	      <@generateInsertColumn/>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+          <@generateInsertValue/>
+        </trim>
+	</insert>
+	
+    <insert id="insertList" parameterType="java.util.List">
+	    insert into <include refid="Table_Name" />
+          (
+		  <#list table.notPkColumns as column><#rt>
+            ${column.sqlName}<#if column_has_next>,</#if>
+          </#list>
+          ) 
+	      values
+	    <foreach collection="list" item="item" separator=",">
+          (
+          <#list table.notPkColumns as column><#rt>
+            ${leftside}item.${column.columnNameLower}${rightside}<#if column_has_next>,</#if>
+	      </#list>
+          )
+        </foreach>
+	</insert>
+
+	<update id="update" parameterType="${basepackage}.entity.po.${className}Po">
+	    update <include refid="Table_Name" />
+        <trim prefix="set" suffixOverrides=",">
+            <@generateUpdate/>
+        </trim>
+        <where><@generatePKWhere/></where>
+	</update>
+
+	<update id="updateByEntity" parameterType="${basepackage}.entity.po.${className}Po">
+		update
+		<include refid="Table_Name" />
+            <trim prefix="set" suffixOverrides=",">
+                <#list table.notPkColumns as column>
+                <if test="s.${column.columnNameLower} != null">
+                    ${column.sqlName} = ${leftside}s.${column.columnNameLower}${rightside}<#if column_has_next>, </#if>
+                </if>
+                </#list>
+            </trim>
+            <where>
+              <trim prefix="(" suffix=")" prefixOverrides="AND">
+                <#list table.columns as column>
+                <if test="w.${column.columnNameLower} != null">
+                    AND ${column.sqlName} = ${leftside}w.${column.columnNameLower}${rightside}
+                </if>
+                </#list>
+              </trim>
+            </where>
+	</update>
+
+	<select id="count" parameterType="${basepackage}.entity.vo.${className?uncap_first}.${className}ReqVo" resultType="java.lang.Integer">
+	    select count(1) from <include refid="Table_Name" />
+	    <where>
+	      <include refid="Base_Where" />
+	    </where>
+	</select>
+
+	<select id="selectOne" parameterType="${basepackage}.entity.vo.${className?uncap_first}.${className}ReqVo" resultMap="BaseResultMapVo">
+	    <include refid="Base_Select" />
+		order by id desc limit 1
+	</select>
+	
+	<select id="selectById" parameterType="${table.pkColumn.javaType}" resultMap="BaseResultMapVo">
+	    select 
+	    <include refid="Base_Column" />
+	    from <include refid="Table_Name" />
+	    where <@generatePKWhere/>
+	</select>
+
+	<select id="selectList" parameterType="${basepackage}.entity.vo.${className?uncap_first}.${className}ReqVo" resultMap="BaseResultMapListVo">
+	    <include refid="Base_Select" />
+	</select>
+	
+	<delete id="delete" parameterType="${basepackage}.entity.po.${className}Po">
+	    delete from <include refid="Table_Name" />
+		where
+		  <include refid="Base_Where" />
+	</delete>
+	
+	<delete id="deleteById" parameterType="${table.pkColumn.javaType}">
+	    delete from <include refid="Table_Name" />
+        where <@generatePKWhere/>
+	</delete>
+	<select id="searchList" parameterType="${basepackage}.entity.vo.${className?uncap_first}.${className}ReqVo" resultMap="BaseResultMapListVo">
+		select
+		<include refid="Base_Column" />
+		from
+		<include refid="Table_Name" />
+		<where>
+			<trim prefixOverrides="AND">
+				<#list table.columns as column>
+				<if test="${column.columnNameLower} != null<#if column.isStringColumn> and ${column.columnNameLower} != ''</#if>">
+					AND ${column.sqlName}<#rt>
+					<#if column.isStringColumn><#lt> like CONCAT('%', ${leftside}${column.columnNameLower}${rightside}, '%')
+					<#else><#lt> = ${leftside}${column.columnNameLower}${rightside}
+				</#if>
+				</if>
+				</#list>
+				</trim>
+		</where>
+		order by ${pkSqlName} desc
+	</select>
+	<#macro generatePKWhere>
+    <#lt>${pkSqlName} = ${leftside}${pkColumnName}${rightside}<#rt>
+	</#macro>
+
+	<#macro generateUpdate>
+	<#list table.notPkColumns as column>
+	    <#if !updateIgnoreList?seq_contains(column)>
+        <if test="${column.columnNameLower} != null">
+          ${column.sqlName} = ${leftside}${column.columnNameLower}${rightside},
+        </if>
+        </#if>
+	</#list>
+	</#macro>
+
+	<#macro generateInsertColumn>
+	<#list table.columns as column>
+          <if test="${column.columnNameLower} != null">
+            ${column.sqlName},
+          </if>
+	</#list>
+	</#macro>
+	<#macro generateInsertValue>
+	<#list table.columns as column>
+	      <if test="${column.columnNameLower} != null">
+		    ${leftside}${column.columnNameLower}${rightside},
+	      </if>
+	</#list>
+	</#macro>
+</mapper>

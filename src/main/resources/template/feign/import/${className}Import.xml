@@ -1,0 +1,15 @@
+<#assign className = table.className>   
+<#assign classNameLower = className?uncap_first> 
+<Config startRow="2">
+	<fields>
+	<#list table.columns as column>
+	  <#if !'create_user,update_user,del_flag,delete_flag'?contains(column)>
+	    <field name="${column.columnNameLower}"<#rt>
+	      <#lt><#if !column.nullable> required="true"</#if><#rt>
+	      <#lt><#if column.isNumberColumn> type="int"</#if><#rt>
+	      <#lt><#if column.isStringColumn> type="string"</#if><#rt>
+	      <#lt><#if column.isDateTimeColumn> type="date" format="yyyy-MM-dd HH:mm:ss"</#if>/>
+	  </#if>
+	</#list>
+	</fields>
+</Config>
